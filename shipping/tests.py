@@ -97,4 +97,16 @@ class BoxRecommendationTest(TestCase):
         recommended_box = recommend_box(heavy_order.id)
 
         self.assertIsNone(recommended_box)
-        
+
+    def test_multiple_quantity_affects_total_weight(self):
+        order = Order.objects.create()
+
+        OrderItem.objects.create(
+            order=order,
+            product=self.laptop,
+            quantity=11,
+        )
+
+        recommended_box = recommend_box(order.id)
+
+        self.assertIsNone(recommended_box)
