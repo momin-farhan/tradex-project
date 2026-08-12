@@ -1,0 +1,241 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tradexa Shipping Box Selection System</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="{% static 'shipping/css/styles.css' %}" />
+</head>
+<body>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-logo">T</div>
+      <div class="brand-text">
+        <h1>Tradexa Box Recommender</h1>
+        <p>AI-Assisted E-Commerce Shipping Box Selection System</p>
+      </div>
+    </div>
+    <div class="header-status">
+      <div class="pulse-dot"></div>
+      <span>Django Engine Connected</span>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+
+    <!-- Tab Navigation -->
+    <nav class="nav-tabs" aria-label="Main Navigation">
+      <button class="tab-btn active" data-tab="view-recommender">
+        <span>📦</span> Order Recommender
+      </button>
+      <button class="tab-btn" data-tab="view-simulator">
+        <span>⚡</span> Order Simulator
+      </button>
+      <button class="tab-btn" data-tab="view-boxes">
+        <span>📋</span> Box Inventory
+      </button>
+      <button class="tab-btn" data-tab="view-products">
+        <span>🛒</span> Product Catalog
+      </button>
+      <button class="tab-btn" data-tab="view-api">
+        <span>🔍</span> API Inspector
+      </button>
+    </nav>
+
+    <!-- Tab View 1: Order Recommender -->
+    <section id="view-recommender" class="tab-view active">
+      <div class="grid-2">
+        
+        <!-- Left: Order Selector & Item List -->
+        <div class="card">
+          <div class="card-title">
+            <span>Select Customer Order</span>
+          </div>
+
+          <div class="form-group">
+            <label for="order-select" class="form-label">Active Orders</label>
+            <select id="order-select" class="form-select">
+              <option value="">Loading orders...</option>
+            </select>
+          </div>
+
+          <div class="card-subtitle">Order Items Breakdown</div>
+          <div class="data-table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Qty</th>
+                  <th>Dimensions (L×W×H)</th>
+                  <th>Weight</th>
+                  <th>Volume</th>
+                </tr>
+              </thead>
+              <tbody id="order-items-tbody">
+                <tr><td colspan="5" style="text-align:center;">Select an order to inspect items</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; font-size:0.85rem; font-weight:700; background:var(--clr-surface-subtle); padding:0.75rem 1rem; border-radius:var(--radius-md);">
+            <span>Total Weight: <span id="order-total-weight" style="color:var(--clr-primary);">0 kg</span></span>
+            <span>Total Volume: <span id="order-total-volume" style="color:var(--clr-primary);">0 cm³</span></span>
+          </div>
+        </div>
+
+        <!-- Right: Box Recommendation Output -->
+        <div class="card">
+          <div class="card-title">
+            <span>Optimal Shipping Box</span>
+          </div>
+          <div id="recommendation-result" class="recommendation-panel">
+            <div style="text-align:center; color:var(--clr-text-muted); padding:3rem 1rem;">
+              Select an order from the list to calculate box recommendation.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Tab View 2: Order Simulator -->
+    <section id="view-simulator" class="tab-view">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">
+            <span>Custom Order Builder</span>
+          </div>
+          <p class="card-subtitle">Add arbitrary products and quantities to test box selection algorithm in real-time.</p>
+
+          <div style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap:0.5rem; margin-bottom:1.25rem;">
+            <div>
+              <label for="sim-product-select" class="form-label">Product</label>
+              <select id="sim-product-select" class="form-select">
+                <option value="">Loading products...</option>
+              </select>
+            </div>
+            <div>
+              <label for="sim-qty-input" class="form-label">Quantity</label>
+              <input id="sim-qty-input" type="number" min="1" value="1" class="form-input" />
+            </div>
+            <div style="display:flex; align-items:flex-end;">
+              <button id="sim-add-item-btn" class="btn-secondary" style="width:100%; height:42px; background:var(--clr-primary-light); color:var(--clr-primary); font-weight:700;">+ Add Item</button>
+            </div>
+          </div>
+
+          <div class="data-table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Qty</th>
+                  <th>Dimensions</th>
+                  <th>Weight</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="sim-items-tbody">
+                <tr><td colspan="5" style="text-align:center; color:var(--clr-text-muted);">No products added yet. Add items above to build order.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; font-size:0.85rem; font-weight:700; background:var(--clr-surface-subtle); padding:0.75rem 1rem; border-radius:var(--radius-md); margin-bottom:1.25rem;">
+            <span>Simulated Weight: <span id="sim-total-weight" style="color:var(--clr-primary);">0 kg</span></span>
+            <span>Simulated Volume: <span id="sim-total-volume" style="color:var(--clr-primary);">0 cm³</span></span>
+          </div>
+
+          <button id="sim-run-btn" class="btn-primary">
+            <span>⚡ Calculate Recommendation</span>
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>Simulated Box Result</span>
+          </div>
+          <div id="sim-result-panel" class="recommendation-panel">
+            <div style="text-align:center; color:var(--clr-text-muted); padding:3rem 1rem;">
+              Build a custom order and click "Calculate Recommendation" to see simulated output.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab View 3: Box Inventory -->
+    <section id="view-boxes" class="tab-view">
+      <div class="card">
+        <div class="card-title">
+          <span>Shipping Box Inventory Catalog</span>
+        </div>
+        <p class="card-subtitle">Registered shipping box sizes, internal dimensions, maximum load capacity, and cost structure.</p>
+        <div id="boxes-grid" class="catalog-grid">
+          <!-- Dynamic Box Cards -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab View 4: Product Catalog -->
+    <section id="view-products" class="tab-view">
+      <div class="card">
+        <div class="card-title">
+          <span>Product Catalog</span>
+        </div>
+        <p class="card-subtitle">E-commerce products with length, width, height, and unit weight.</p>
+        <div id="products-grid" class="catalog-grid">
+          <!-- Dynamic Product Cards -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab View 5: API Inspector -->
+    <section id="view-api" class="tab-view">
+      <div class="card">
+        <div class="card-title">
+          <span>Django REST API Inspector & Live Tester</span>
+        </div>
+        <p class="card-subtitle">Directly test JSON recommendation endpoints and query system models via live REST requests.</p>
+
+        <div style="display:flex; gap:0.5rem; margin-bottom:1rem; flex-wrap:wrap;">
+          <button class="btn-secondary preset-btn" data-url="/orders/1/recommend/">GET /orders/1/recommend/</button>
+          <button class="btn-secondary preset-btn" data-url="/api/orders/">GET /api/orders/</button>
+          <button class="btn-secondary preset-btn" data-url="/api/boxes/">GET /api/boxes/</button>
+          <button class="btn-secondary preset-btn" data-url="/api/products/">GET /api/products/</button>
+        </div>
+
+        <div class="api-bar">
+          <div class="method-tag">GET</div>
+          <input id="api-url-input" type="text" class="form-input" value="/orders/1/recommend/" style="font-family:var(--font-mono);" />
+          <button id="api-send-btn" class="btn-primary" style="width:auto; padding:0 1.5rem;">Send</button>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+          <span style="font-size:0.85rem; font-weight:700;">Response Payload</span>
+          <div style="display:flex; gap:0.5rem;">
+            <span id="api-status-tag" class="item-badge" style="background:#10b981; color:white;">200 OK</span>
+            <span id="api-time-tag" class="item-badge" style="background:#64748b; color:white;">0 ms</span>
+          </div>
+        </div>
+
+        <pre id="api-json-output" class="json-output">// Click "Send" or select a preset to inspect response payload</pre>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- JavaScript -->
+  <script src="{% static 'shipping/js/app.js' %}"></script>
+</body>
+</html>

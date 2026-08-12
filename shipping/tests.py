@@ -169,3 +169,40 @@ class BoxRecommendationTest(TestCase):
         self.assertEqual(response.status_code, 404)
         data = response.json()
         self.assertEqual(data["error"], "No suitable box found")
+
+    def test_index_view_renders_dashboard(self):
+        url = reverse("index")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Tradexa Box Recommender")
+
+    def test_api_orders_list(self):
+        url = reverse("api-orders-list")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("orders", data)
+        self.assertGreaterEqual(len(data["orders"]), 1)
+
+    def test_api_boxes_list(self):
+        url = reverse("api-boxes-list")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("boxes", data)
+        self.assertEqual(len(data["boxes"]), 3)
+
+    def test_api_products_list(self):
+        url = reverse("api-products-list")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("products", data)
+
+    def test_api_simulate_recommendation_success(self):
+        url = reverse("api-simulate")
+        payload = {"items": [{"product_id": self.laptop.id, "quantity": 1}]}
+        response = self.client.post(url, data=payload, content_type="application/json")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["recommended_box"], "Medium Box")

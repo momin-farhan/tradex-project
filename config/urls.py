@@ -17,13 +17,25 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from shipping.views import recommend_box_view
+from shipping.views import (
+    index_view,
+    recommend_box_view,
+    api_orders_list,
+    api_boxes_list,
+    api_products_list,
+    api_simulate_recommendation,
+)
 
 urlpatterns = [
+    path("", index_view, name="index"),
     path("admin/", admin.site.urls),
     path(
         "orders/<int:order_id>/recommend/",
         recommend_box_view,
         name="recommend-box",
     ),
+    path("api/orders/", api_orders_list, name="api-orders-list"),
+    path("api/boxes/", api_boxes_list, name="api-boxes-list"),
+    path("api/products/", api_products_list, name="api-products-list"),
+    path("api/simulate/", api_simulate_recommendation, name="api-simulate"),
 ]
