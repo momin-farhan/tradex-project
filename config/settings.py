@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-2(ht=)22d$+i7$lqd$=bt%bgm^eubxnj#p(eh&l%6xct%i5%e!
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'testserver', '*']
 
 
 # Application definition
@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 
-    "shipping",
+    "shipping.apps.ShippingConfig",
 ]
 
 MIDDLEWARE = [
@@ -56,7 +56,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'shipping' / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
