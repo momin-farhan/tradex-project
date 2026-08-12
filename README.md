@@ -1,71 +1,120 @@
 # Tradexa Box Selection System
 
+![Django CI](https://github.com/momin-farhan/tradex-project/actions/workflows/test.yml/badge.svg)
+
 ## Overview
 
-The Tradexa Box Selection System is a Django-based application that recommends a suitable shipping box for an order based on product dimensions, product weight, box dimensions, maximum box weight, and box cost.
+The Tradexa Box Selection System is a Django-based web application that recommends the optimal shipping box for an e-commerce order based on:
+1. Individual product dimensions (with 3D orientation/rotation support).
+2. Combined product weight capacity versus box weight limits.
+3. Total volumetric capacity of all items in an order.
+4. Box cost optimization (selecting the cheapest suitable box).
 
 ## Technology Stack
 
-- Python
-- Django
-- SQLite
-- Django REST-style JSON endpoint
-- Django Test Framework
+- **Backend**: Python 3.12, Django 5.x / 6.x
+- **Database**: SQLite3
+- **API**: Django REST-style JSON API
+- **Testing**: Django Test Framework (`django.test.TestCase`)
+- **CI/CD**: GitHub Actions (`.github/workflows/test.yml`)
 
 ## Features
 
-- Product management with dimensions and weight
-- Shipping box management with dimensions, weight capacity, and cost
-- Order and order-item management
-- Automatic box recommendation
-- Dimension-based box fitting
-- Weight-capacity validation
-- Cheapest suitable box selection
-- JSON recommendation endpoint
-- Automated tests for key scenarios
+- **Product Management**: Models products with length, width, height, and weight.
+- **Box Management**: Models internal length, width, height, maximum weight capacity, and cost.
+- **Order Management**: Models orders and multi-item order quantities.
+- **Rotation-Aware Dimension Fitting**: Sorts dimensions to determine 3D orientation fit.
+- **Volumetric & Weight Capacity Constraints**: Evaluates total order weight and total volume.
+- **Cost Minimization**: Automatically picks the cheapest suitable box among all valid candidates.
+- **Defensive Error Handling**: Returns HTTP 404 with structured JSON for invalid orders or when no suitable box fits.
+- **Automated Testing Suite**: 9 unit test cases covering all edge cases.
 
-## Setup
+## Installation & Setup
 
-### 1. Clone the repository
+### 1. Clone Repository & Create Virtual Environment
 
 ```bash
 git clone https://github.com/momin-farhan/tradex-project.git
 cd tradex-project
 
+# macOS / Linux
 python3 -m venv venv
 source venv/bin/activate
 
-py -m venv venv
+# Windows (PowerShell)
+python -m venv venv
 .\venv\Scripts\Activate.ps1
+```
 
-python -m pip install django
+### 2. Install Dependencies & Run Migrations
 
+```bash
+pip install django
 python manage.py migrate
+```
 
+### 3. Create Superuser (Optional) & Run Server
+
+```bash
 python manage.py createsuperuser
-
 python manage.py runserver
+```
 
-http://127.0.0.1:8000/
-
-http://127.0.0.1:8000/admin/
+The application will be accessible at:
+- Web App / Admin: `http://127.0.0.1:8000/admin/`
 
 ## Recommendation API
 
-To get a box recommendation for an order, open:
+### Request
 
 ```text
-http://127.0.0.1:8000/orders/1/recommend/
+GET /orders/<order_id>/recommend/
+```
 
+### Example Successful Response (HTTP 200)
+
+```json
 {
     "order_id": 1,
     "recommended_box": "Medium Box",
     "cost": "30.00"
 }
+```
 
-## Testing
+### Example Error Response (HTTP 404)
 
-Run the automated test suite with:
+```json
+{
+    "error": "No suitable box found"
+}
+```
+
+## Automated Testing
+
+Run the full test suite with:
 
 ```bash
 python manage.py test
+```
+
+Sample output:
+
+```text
+Found 9 test(s).
+Creating test database for alias 'default'...
+System check identified no issues (0 silenced).
+.........
+----------------------------------------------------------------------
+Ran 9 tests in 0.015s
+
+OK
+Destroying test database for alias 'default'...
+```
+
+## Submission Files
+
+- `README.md` — Project overview and setup instructions.
+- `AI_USAGE.md` — Complete AI usage log, prompt details, modifications, AI mistakes, and learnings.
+- `AI_CHAT_TRANSCRIPT.md` — Step-by-step development process and decision log.
+- `TEST_OUTPUT.md` — Full terminal output log of test executions.
+- `.github/workflows/test.yml` — GitHub Actions CI pipeline configuration.
