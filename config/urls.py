@@ -17,6 +17,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+from shipping.views import recommend_box_view
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path("admin/", admin.site.urls),
+    path(
+        "orders/<int:order_id>/recommend/",
+        recommend_box_view,
+        name="recommend-box",
+    ),
 ]
