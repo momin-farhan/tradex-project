@@ -3,7 +3,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from .models import Order, Box, Product
-from .services import recommend_box, dimensions_fit
+from .services import recommend_box, dimensions_fit, Item3D, can_pack_items_3d
 
 
 def index_view(request):
@@ -21,6 +21,13 @@ def recommend_box_view(request, order_id):
             },
             status=404
         )
+    except ValueError as ve:
+        return JsonResponse(
+            {
+                "error": str(ve)
+            },
+            status=400
+        )
 
     if box is None:
         return JsonResponse(
@@ -31,8 +38,8 @@ def recommend_box_view(request, order_id):
         )
 
     items = list(order.items.select_related("product"))
-    total_weight = sum(item.product.weight * item.quantity for item in items)
-    total_volume = sum((item.product.length * item.product.width * item.product.height) * item.quantity for item in items)
+    total_weight = sum(item.product.weight * item.quantity for item in items if item.quantity > 0)
+    total_volume = sum((item.product.length * item.product.width * item.product.height) * item.quantity for item in items if item.quantity > 0)
     box_volume = box.internal_length * box.internal_width * box.internal_height
 
     weight_utilization = round(float(total_weight / box.max_weight * 100), 1) if box.max_weight > 0 else 0
@@ -46,6 +53,7 @@ def recommend_box_view(request, order_id):
             "weight": str(item.product.weight),
         }
         for item in items
+        if item.quantity > 0
     ]
 
     return JsonResponse(
@@ -79,8 +87,8 @@ def api_orders_list(request):
     result = []
     for order in orders:
         items = list(order.items.all())
-        total_weight = sum(item.product.weight * item.quantity for item in items)
-        total_volume = sum((item.product.length * item.product.width * item.product.height) * item.quantity for item in items)
+        total_weight = sum(item.product.weight * item.quantity for item in items if item.quantity > 0)
+        total_volume = sum((item.product.length * item.product.width * item.product.height) * item.quantity for item in items if item.quantity > 0)
         result.append({
             "id": order.id,
             "created_at": order.created_at.strftime("%Y-%m-%d %H:%M:%S"),
@@ -146,22 +154,35 @@ def api_simulate_recommendation(request):
     except Exception:
         return JsonResponse({"error": "Invalid JSON body"}, status=400)
 
-    if not items_input:
+    if not isinstance(items_input, list) or not items_input:
         return JsonResponse({"error": "No items provided"}, status=400)
 
+    items_3d = []
     items_summary = []
     total_weight = 0
     total_volume = 0
 
     for item_data in items_input:
+        if not isinstance(item_data, dict):
+            continue
         product_id = item_data.get("product_id")
-        quantity = int(item_data.get("quantity", 1))
+        try:
+            quantity = int(item_data.get("quantity", 1))
+        except (ValueError, TypeError):
+            continue
+
         if quantity <= 0:
             continue
         try:
             product = Product.objects.get(id=product_id)
         except Product.DoesNotExist:
             continue
+
+        try:
+            for _ in range(quantity):
+                items_3d.append(Item3D(product.length, product.width, product.height, product.weight, product.name))
+        except ValueError as ve:
+            return JsonResponse({"error": str(ve)}, status=400)
 
         item_weight = product.weight * quantity
         item_vol = (product.length * product.width * product.height) * quantity
@@ -173,17 +194,23 @@ def api_simulate_recommendation(request):
             "quantity": quantity,
         })
 
-    if not items_summary:
+    if not items_3d:
         return JsonResponse({"error": "No valid products in order"}, status=400)
 
+    tot_wt_float = float(total_weight)
+    all_boxes = list(Box.objects.all())
+    valid_boxes = [b for b in all_boxes if float(b.internal_length) > 0 and float(b.internal_width) > 0 and float(b.internal_height) > 0 and float(b.max_weight) > 0]
+    valid_boxes.sort(key=lambda b: (
+        float(b.cost),
+        float(b.internal_length * b.internal_width * b.internal_height),
+        -float(b.max_weight)
+    ))
+
     suitable_boxes = []
-    for box in Box.objects.all().order_by("cost"):
-        if box.max_weight < total_weight:
+    for box in valid_boxes:
+        if float(box.max_weight) < tot_wt_float:
             continue
-        box_vol = box.internal_length * box.internal_width * box.internal_height
-        if box_vol < total_volume:
-            continue
-        if all(dimensions_fit(item["product"], box) for item in items_summary):
+        if can_pack_items_3d(items_3d, box.internal_length, box.internal_width, box.internal_height):
             suitable_boxes.append(box)
 
     if not suitable_boxes:

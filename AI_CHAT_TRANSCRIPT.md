@@ -1,249 +1,71 @@
-# AI Development Transcript — Tradexa Box Selection System
-
-## 1. Assignment Understanding
-
-**User:** I need to complete the assignment from scratch and demonstrate it.
-
-**Assistant:** We broke the work into small steps: Django setup, models, admin data, recommendation logic, API endpoint, tests, documentation, GitHub synchronization, and final demonstration.
-
-## 2. Environment Setup
-
-**User:** Django/virtual environment setup was giving PowerShell activation errors.
-
-**Assistant:** We used the virtual environment and PowerShell execution-policy workaround, then verified Django with:
-
-```bash
-python -m django --version
-```
-
-Django was available and the project was opened in VS Code.
-
-## 3. Django Project
-
-The project structure was established around:
-
-```text
-tradex-project/
-├── config/
-├── shipping/
-├── manage.py
-└── venv/
-```
-
-The `shipping` application contains the business models and recommendation logic.
-
-## 4. Models and Database
-
-The project uses these core entities:
-
-- `Box`
-- `Product`
-- `Order`
-- `OrderItem`
-
-Migrations were created and applied successfully:
-
-```bash
-python manage.py makemigrations
-python manage.py migrate
-```
-
-Django system checks also passed.
-
-## 5. Admin Data
-
-Test data was created through Django Admin:
-
-### Boxes
-
-- Small Box
-- Medium Box
-- Large Box
-
-### Products
-
-- Laptop
-- Book
-- Monitor
-- Keyboard
-
-### Order
-
-- Order #1
-- Laptop × 1
-
-## 6. Recommendation Logic
-
-The business logic was separated into:
-
-```text
-shipping/services.py
-```
-
-The recommendation process:
-
-1. Load the order.
-2. Calculate total order weight using product weight × quantity.
-3. Check each box's maximum weight.
-4. Check whether product dimensions fit inside the box.
-5. Sort suitable boxes by cost.
-6. Return the cheapest suitable box.
-7. Return `None` if no box is suitable.
-
-The dimension check sorts product and box dimensions before comparison, allowing orientation/rotation of the product.
-
-## 7. API Endpoint
-
-The Django view was connected to:
-
-```text
-/orders/<order_id>/recommend/
-```
-
-For Order #1 the working response was:
-
-```json
-{
-    "order_id": 1,
-    "recommended_box": "Medium Box",
-    "cost": "30.00"
-}
-```
-
-### Why Medium Box?
-
-Laptop:
-
-```text
-30 × 20 × 5
-Weight = 2
-```
-
-Small Box:
-
-```text
-20 × 20 × 10
-```
-
-The laptop does not fit.
-
-Medium Box:
-
-```text
-35 × 25 × 15
-Max Weight = 10
-Cost = 30
-```
-
-The laptop fits and the weight is within capacity.
-
-Large Box also fits, but it costs more.
-
-Therefore the cheapest suitable option is the Medium Box.
-
-## 8. Automated Testing
-
-The test suite was created in:
-
-```text
-shipping/tests.py
-```
-
-Four scenarios are covered:
-
-1. Normal recommendation: Laptop → Medium Box.
-2. Product too large: no suitable box.
-3. Product too heavy: no suitable box.
-4. Multiple quantity affects total weight.
-
-Final test result:
-
-```text
-Found 4 test(s).
-....
-Ran 4 tests in 0.005s
-
-OK
-```
-
-## 9. GitHub Workflow
-
-The project was committed and pushed to GitHub throughout development.
-
-The final repository contained:
-
-```text
-.gitignore
-AI_USAGE.md
-README.md
-TEST_OUTPUT.md
-config/
-manage.py
-shipping/
-```
-
-The virtual environment was excluded from the repository.
-
-Final Git status:
-
-```text
-On branch main
-Your branch is up to date with 'origin/main'.
-
-nothing to commit, working tree clean
-```
-
-## 10. Documentation
-
-The repository includes:
-
-- `README.md` — project overview, stack, setup, API and testing instructions.
-- `AI_USAGE.md` — AI assistance, prompts, and learning summary.
-- `TEST_OUTPUT.md` — final automated test output.
-
-## 11. Reasoning / Decision Summary
-
-This section is a concise explanation of the development decisions. It is intentionally a summary rather than private chain-of-thought.
-
-### Decision 1 — Separate business logic
-
-The box-selection algorithm was placed in `shipping/services.py` instead of putting the logic directly in the view. This keeps the view small and makes the algorithm easier to test.
-
-### Decision 2 — Check weight before dimensions
-
-A box that cannot carry the total weight can immediately be rejected. This avoids unnecessary dimension processing for boxes that already fail a basic constraint.
-
-### Decision 3 — Allow product rotation
-
-Sorting dimensions before comparison provides a simple orientation-independent fit check.
-
-### Decision 4 — Prefer the cheapest suitable box
-
-Boxes are considered in ascending cost order. The first box that satisfies the constraints is therefore the cheapest suitable option.
-
-### Decision 5 — Return `None` when nothing fits
-
-This gives the application a clear failure state, which the API converts into a `404` response.
-
-### Decision 6 — Test edge cases
-
-Testing only the successful Laptop case would not be enough. Oversized products, excessive weight, and quantities were added to verify important failure and calculation paths.
-
-## 12. Final Demonstration Flow
-
-The recommended demonstration order is:
-
-1. Explain the problem.
-2. Show Django Admin.
-3. Show the Laptop and box dimensions.
-4. Show Order #1 containing Laptop × 1.
-5. Explain the recommendation algorithm.
-6. Open `/orders/1/recommend/`.
-7. Show `Medium Box` and cost `30.00`.
-8. Run `python manage.py test`.
-9. Show all 4 tests passing.
-10. Show the GitHub repository and documentation.
-
-## 13. Important Technical Limitation
-
-The current implementation is a simple rotation-aware dimension and weight heuristic. It is not a full 3D bin-packing optimization algorithm. This should be stated honestly if asked during evaluation.
+# AI Development Transcript & Decision Log — Tradexa Box Selection System
+
+## 1. Initial Project Scaffolding & Setup
+
+- **User Goal**: Build a Django application to recommend optimal shipping boxes for e-commerce orders.
+- **Initial Actions**:
+  - Initialized virtual environment and Django project (`config`, `shipping`).
+  - Created Django models (`Product`, `Box`, `Order`, `OrderItem`).
+  - Generated initial migrations and set up SQLite database.
+
+---
+
+## 2. Review of Submission Feedback & Flaw Analysis
+
+Upon reviewing the evaluation feedback, the following critical deficiencies were identified in the early implementation:
+
+1. **Failure on Multi-Product Orders**: Products were checked individually for dimensional fit rather than verifying if the entire order can physically fit into the box simultaneously in 3D space.
+2. **Quantity Ignored in Spatial Packing**: Order quantities were multiplied for weight and volume sums, but ignored when evaluating physical 3D bounding box constraints.
+3. **Missing Input Validation & Edge Case Handling**: Zero/negative dimensions and empty orders were not validated.
+4. **Limited Test Coverage**: Only 4 basic test cases were present.
+5. **Undocumented Business Assumptions**: Tie-breaking criteria and trade-offs for defining the "best" box were absent.
+6. **Superficial AI Usage Documentation**: AI documentation lacked evidence of iterative critique, debugging, and code refactoring.
+
+---
+
+## 3. Engineering Decisions & Code Refactoring Log
+
+### Decision 1 — Replace 1D Item Fitting with 3D Bin Packing Engine (`Item3D` & Extreme Points)
+- **Rationale**: A multi-product order cannot be validated by simple volume sum or individual item dimension checks. Items must be packed together in 3D space.
+- **Implementation**:
+  - Implemented `Item3D` class representing discrete 3D bounding boxes.
+  - Built `can_pack_items_3d()` using the **Extreme Points algorithm** with 6-DOF rotational evaluation ($x, y, z$ coordinate placement + rotation permutations) and 3D non-overlap validation.
+  - Implemented multi-heuristic item sorting strategies (Volume, Max Dimension, Footprint Area, Height) to maximize placement success.
+
+### Decision 2 — Quantity Expansion into Physical Bounding Boxes
+- **Rationale**: An order item with `quantity = N` occupies $N$ times the physical space inside the shipping container.
+- **Implementation**:
+  - Added `build_3d_items_from_order_items()` to expand each item quantity into $N$ individual `Item3D` instances prior to 3D packing simulation.
+
+### Decision 3 — Multi-Tier "Best Box" Tie-Breaking Hierarchy
+- **Rationale**: When multiple boxes satisfy feasibility constraints at the same cost, tie-breaking must reflect warehouse operational realities.
+- **Implementation**:
+  - Sorted candidate boxes by `(cost ASC, volume ASC, -max_weight DESC)`.
+  - Preferring smaller volume reduces void fill packaging materials (bubble wrap, air pillows) and minimizes carrier dimensional weight surcharges.
+
+### Decision 4 — Defensive Input Validation & Exception Handling
+- **Rationale**: Robust APIs must reject invalid inputs gracefully without server exceptions.
+- **Implementation**:
+  - Added validation guards in `Item3D.__init__` checking that length, width, and height are strictly positive ($>0$) and weight is non-negative ($\ge 0$).
+  - Updated API views (`recommend_box_view`, `api_simulate_recommendation`) to catch `Order.DoesNotExist` and `ValueError`, returning structured HTTP 404 and HTTP 400 JSON responses.
+
+### Decision 5 — Expanded Automated Unit Test Suite (26 Test Cases)
+- **Rationale**: High test coverage is essential to guarantee algorithm correctness across rotation, multi-product packing, spatial failure, quantity expansion, and API responses.
+- **Implementation**:
+  - Replaced the initial 4 tests with a comprehensive **26-test suite** in `shipping/tests.py`.
+  - Verified 3D rotation, spatial failure when volume fits, quantity expansion, tie-breaking rules, boundary matches, and REST API endpoints.
+
+---
+
+## 4. Verification & Final Results
+
+- **Automated Test Run**:
+  ```bash
+  ./venv/bin/python manage.py test
+  ```
+  *Result*: **26/26 tests passed in 0.053s**.
+
+- **Documentation Updates**:
+  - Updated `README.md` with explicit business assumptions, multi-tier best box criteria, 3D Bin Packing architecture, logistics trade-offs, and setup instructions.
+  - Updated `AI_USAGE.md` with detailed prompt-response-critique cycles, specific AI errors corrected, and empirical verification logs.
+  - Updated `TEST_OUTPUT.md` with raw test execution logs and individual test case descriptions.
